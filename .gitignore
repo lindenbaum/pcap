@@ -1,3 +1,4 @@
 *.beam
 *.raw
-/_build
+/_build/
+/pcap
