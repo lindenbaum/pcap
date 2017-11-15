@@ -79,25 +79,41 @@ extend_path() ->
 %% @private
 %%------------------------------------------------------------------------------
 load_plugins(Dirs) ->
+    io:format("Using plugin paths ~p~n", [Dirs]),
     lists:foreach(
       fun code:load_file/1,
       lists:map(
-        fun(F) -> list_to_atom(filename:basename(F, "*.beam")) end,
+        fun(F) -> list_to_atom(filename:basename(F, ".beam")) end,
         lists:usort(
           lists:append(
-            [lists:append(
-               filelib:wildcard(filename:join([D, "*.beam"])),
-               filelib:wildcard(filename:join([D, "**", "*.beam"])))
+            [filelib:wildcard(filename:join([D, "*.beam"]))
              || D <- Dirs])))).
 
 %%------------------------------------------------------------------------------
 %% @private
 %%------------------------------------------------------------------------------
 parser_modules() ->
+    AllLoaded = code:all_loaded(),
     lists:usort(
-      [M || {M, _} <- code:all_loaded(),
-            {behaviour, Bs} <- M:module_info(attributes),
-            pcap <- Bs]).
+     lists:append(
+       modules_with_behaviour(AllLoaded),
+       modules_with_exports(AllLoaded))).
+
+%%------------------------------------------------------------------------------
+%% @private
+%%------------------------------------------------------------------------------
+modules_with_behaviour(Modules) ->
+    [Module || {Module, _} <- Modules,
+               {behaviour, Behaviours} <- Module:module_info(attributes),
+               lists:member(pcap, Behaviours)].
+
+%%------------------------------------------------------------------------------
+%% @private
+%%------------------------------------------------------------------------------
+modules_with_exports(Modules) ->
+    Callbacks = pcap:behaviour_info(callbacks),
+    [Module || {Module, _} <- Modules,
+               Callbacks -- Module:module_info(exports) =:= []].
 
 %%------------------------------------------------------------------------------
 %% @private
