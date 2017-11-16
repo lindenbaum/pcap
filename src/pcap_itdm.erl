@@ -33,6 +33,7 @@
 
 -record(state, {
           channel     :: undefined | non_neg_integer(),
+          flow        :: undefined | non_neg_integer(),
           flows = #{} :: #{{binary(), non_neg_integer()} => #flow{}}}).
 
 -define(LOG(Fmt, Args), io:format(Fmt ++ "~n", Args)).
@@ -48,11 +49,16 @@
 %%------------------------------------------------------------------------------
 -spec options() -> [getopt:option_spec()].
 options() ->
-    [{extract,
-      $x,
-      "extract",
+    [{channel,
+      undefined,
+      "channel",
       {integer, undefined},
-      atom_to_list(?MODULE) ++ " - ITDM channel to extract"}].
+      atom_to_list(?MODULE) ++ " - ITDM channel to extract"},
+     {flow,
+      undefined,
+      "flow",
+      {integer, undefined},
+      atom_to_list(?MODULE) ++ " - ITDM flow to examine"}].
 
 %%------------------------------------------------------------------------------
 %% @doc
@@ -64,7 +70,10 @@ options() ->
 %%
 %% This parser can either be used to print interesting ITDM control messages
 %% and/or to extract the payload of specific ITDM channel. If this is desired
-%% the option `{extract_channel, Channel}' must be given in the options list.
+%% the option `{channel, Channel}' must be given in the options list. The
+%% channel to extract can be further specified, e.g. by examining only a certain
+%% flow using the option `{flow, FlowUID}'.
+%%
 %% If packets for the specific `Channel' can be found in the trace, the parser
 %% will extract the payload into files of the form
 %% DEST_MAC-FLOW_UID-ITDM_MODE-CHANNEL_NUM.raw, e.g.
@@ -73,8 +82,9 @@ options() ->
 %%------------------------------------------------------------------------------
 -spec parser(proplists:proplist()) -> pcap:parser(#state{}).
 parser(Opts) ->
-    Channel = proplists:get_value(extract, Opts),
-    {fun itdm_parser/6, #state{channel = Channel}}.
+    Channel = proplists:get_value(channel, Opts),
+    Flow = proplists:get_value(flow, Opts),
+    {fun itdm_parser/6, #state{channel = Channel, flow = Flow}}.
 
 %%%=============================================================================
 %%% Internal Functions
@@ -106,7 +116,8 @@ parse_mpls(_, _, _, State) ->
 %%------------------------------------------------------------------------------
 parse_sfp(<<_:88, 0:24, Rest/binary>>, Dst, Src, State) ->
     parse_itdm_ctrl(Rest, Dst, Src, State);
-parse_sfp(<<_:88, UID:24, Rest/binary>>, Dst, Src, State) ->
+parse_sfp(<<_:88, UID:24, Rest/binary>>, Dst, Src, State)
+  when State#state.flow =:= undefined; State#state.flow =:= UID ->
     case maps:find({Dst, UID}, State#state.flows) of
         {ok, #flow{mode = 1}} ->
             parse_itdm_1ms(Rest, Dst, Src, UID, State);
