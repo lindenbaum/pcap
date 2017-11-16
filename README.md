@@ -34,7 +34,7 @@ Usage
 To display help text of `pcap` use the following:
 
 ```shell
-> pcap -h|--help
+> pcap --help
 ```
 
 Extend
@@ -71,7 +71,7 @@ parser_impl(_TsSec, _TsUSec, InclLen, _OrigLen, _Data, State) ->
     State.
 ```
 
-Comile it and use it with `pcap:`
+Compile and use the parser:
 ```shell
 > erlc -o /tmp/ /tmp/example.erl
 > PCAP_PLUGINS=/tmp/ ./pcap -h
