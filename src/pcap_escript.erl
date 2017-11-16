@@ -145,7 +145,7 @@ usage(OptSpecList) ->
       OptSpecList,
       escript:script_name(),
       "[filename]",
-      "Parse PCAP data using the specified parser.\n"
+      "Parse PCAP data using a specialized parser.\n"
       "\n"
       "A parser is specified using the '--parser' flag. Please note that\n"
       "specific options are only applicable to specific parsers (see below).\n"

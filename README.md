@@ -6,13 +6,15 @@ with the power of the awesome Erlang binary syntax. There's a basic PCAP parser
 that extracts single packets from a trace and feeds them into sub-parsers which
 can then do with the packet whatever they want.
 
-Keep in mind that this is a tool specialized use cases. There's already plenty
-of tools out there that can dissect PCAP traces, most famously
+Keep in mind that this is a tool for specialized use cases only. There's already
+plenty of tools out there that can dissect PCAP traces, most famously
 [WireShark](https://www.wireshark.org/).
 
 Currently, the only supported sub-parser is the `pcap_itdm` parser which allows
 dissecting of the [Internal TDM](https://www.picmg.org/product/internal-tdm-specification/)
-protocol.
+protocol. This is a parser that logs channel management (125us mode) and
+optionally extracts the payload of a certain ITDM channel into a file (separate
+for each destination MAC address and ITDM flow).
 
 BUILD
 -----
@@ -74,7 +76,7 @@ Comile it and use it with `pcap:`
 Using plugin paths ["/tmp"]
 Usage: ./pcap [-h] [--parser [<parser>]] [-o] [-x [<extract>]] [filename]
 
-Parse PCAP data using the specified parser.
+Parse PCAP data using a specialized parser.
 
 A parser is specified using the '--parser' flag. Please note that
 specific options are only applicable to specific parsers (see below).
