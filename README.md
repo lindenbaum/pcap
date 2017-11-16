@@ -19,11 +19,13 @@ for each destination MAC address and ITDM flow).
 BUILD
 -----
 
-The project is built using `rebar3` (which is not packaged) with the project. To
+`pcap` is tool written in the [Erlang](http://www.erlang.org/) programming
+language. You'll need to have Erlang installed to build and use `pcap`.
+Furthermore, the project is built using [rebar3](http://www.rebar3.org/). To
 create the `pcap` tool just use
 
-```erlang
-rebar3 do compile,escriptize
+```shell
+> ./rebar3 do compile,escriptize
 ```
 
 Usage
@@ -31,8 +33,8 @@ Usage
 
 To display help text of `pcap` use the following:
 
-```erlang
-pcap -h|--help
+```shell
+> pcap -h|--help
 ```
 
 Extend
