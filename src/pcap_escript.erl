@@ -37,10 +37,11 @@ main(Argv) ->
     ok = load_modules(),
     ok = load_plugins(extend_path()),
     Parsers = parser_modules(),
-    OptSpecList = opt_spec_list(Parsers),
+    OptSpecMap = opt_spec_map(Parsers),
+    OptSpecList = opt_spec_list(OptSpecMap),
     case getopt:parse_and_check(OptSpecList, Argv) of
         {ok, {Opts, Files}} ->
-            ok = run(OptSpecList, Opts, Files);
+            ok = run(OptSpecMap, Opts, Files);
         {error, Reason} ->
             ok = io:format("Invalid invocation ~w~n", [Reason]),
             ok = usage(OptSpecList),
@@ -118,12 +119,23 @@ modules_with_exports(Modules) ->
 %%------------------------------------------------------------------------------
 %% @private
 %%------------------------------------------------------------------------------
-opt_spec_list(Parsers) ->
+opt_spec_map(Parsers) ->
     Available = string:join([atom_to_list(P) || P <- Parsers], "|"),
     Descr = "Parser to use (available " ++ Available ++ ")",
-    [{help, $h, "help", undefined, "Show this help text"},
-     {parser, undefined, "parser", {atom, pcap_itdm}, Descr}
-     | lists:append([P:options() || P <- Parsers])].
+    [{?MODULE, [{help, $h, "help", undefined, "Show this help text"},
+                {parser, undefined, "parser", {atom, pcap_itdm}, Descr}]} |
+     [{P, P:options()} || P <- Parsers]].
+
+%%------------------------------------------------------------------------------
+%% @private
+%%------------------------------------------------------------------------------
+opt_spec_list(OptSpecMap) -> lists:append(element(2, lists:unzip(OptSpecMap))).
+
+%%------------------------------------------------------------------------------
+%% @private
+%%------------------------------------------------------------------------------
+opt_spec_keys(OptSpecMap) ->
+    [element(1, Opt) || Opt <- opt_spec_list(OptSpecMap), is_tuple(Opt)].
 
 %%------------------------------------------------------------------------------
 %% @private
@@ -148,19 +160,23 @@ usage(OptSpecList) ->
 %%------------------------------------------------------------------------------
 %% @private
 %%------------------------------------------------------------------------------
-run(OptSpecList, Opts, []) ->
-    run(OptSpecList, Opts, ["-"]);
-run(OptSpecList, Opts, Files) ->
+run(OptSpecMap, Opts, []) ->
+    run(OptSpecMap, Opts, ["-"]);
+run(OptSpecMap, Opts, Files) ->
     case {proplists:get_bool(help, Opts), Files} of
         {true, _} ->
-            usage(OptSpecList);
+            usage(opt_spec_list(OptSpecMap));
         {false, [File]} ->
             Parser = proplists:get_value(parser, Opts),
-            ParserOpts = lists:keydelete(parser, 1, Opts),
+            ParserOpts =
+                lists:foldr(
+                  fun(Key, Os) -> proplists:delete(Key, Os) end,
+                  Opts,
+                  opt_spec_keys(lists:keydelete(Parser, 1, OptSpecMap))),
             ok = io:format("Using ~w:parser(~p)~n", [Parser, ParserOpts]),
             pcap:parse(File, Parser:parser(ParserOpts));
         {false, Files} ->
             ok = io:format("Parsing multiple files is unsupported~n", []),
-            ok = usage(OptSpecList),
+            ok = usage(opt_spec_list(OptSpecMap)),
             halt(1)
     end.
